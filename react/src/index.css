@@ -1,0 +1,99 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  --app-primary: #4a90e2;
+  --app-secondary: #50e3c2;
+  --app-tertiary: #f5a623;
+  --app-quaternary: #d0021b;
+
+  --max-appbar-height: 36px;
+  --max-input-height: 2.2rem;
+
+  /* Table styles */
+  --table-header-bg: #e8f1ff;
+  --table-header-color: #333333;
+  --table-row-hover-bg: #f0f0f0;
+  --table-header-height: 1rem;
+  --table-row-height: 1rem;
+  --table-cell-padding: 0.5rem !important;
+  --table-border: 2px solid rgb(107, 107, 107) !important;
+
+  /* Dialoge Box  */
+  --dialog-background-color: var(--app-primary);
+  --dialog-color: #ffffff;
+  --dialog-font-size: 1rem;
+
+  /* Lockers Based On Garments */
+  --locker-Empty: #02751e;
+  --locker-Warning: #b9a701; 
+  --locker-color-main: #1565c0;
+  --locker-Inprocess: #ff4500;
+
+  --spacing : var(--max-appbar-height);
+
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+/* Common Icon Button */
+.icon-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: none !important;
+  cursor: pointer !important;
+  font-size: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  min-width: unset !important;
+}
+
+/* Button Types */
+.icon-btn.refresh {
+  background: #d1e1fc;
+  color: #1a73e8;
+}
+
+.icon-btn.confirm {
+  background: #e1fce9;
+  color: #1e8e3e;
+}
+
+.icon-btn.close {
+  background: #ffe6e4;
+  color: #d93025;
+}
+
+.icon-btn.add {
+  background: rgb(250, 227, 184);
+  color:orange;
+  font-size: x-large;
+}
+
+/* Hover Effects */
+.icon-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.icon-btn:active {
+  transform: scale(0.95);
+}
+
+.report-head{
+  text-align: center !important ;
+  background-color: rgba(168, 197, 226 ,1) !important;
+  padding: 0 0.9rem 0 0.9rem !important;
+  color:white !important;
+  margin: 0 !important;
+  width: 100%;
+}

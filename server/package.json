@@ -1,0 +1,44 @@
+{
+  "name": "aqgen",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "nodemon --exec tsx watch main.ts",
+    "build": "tsc",
+    "start": "node dist/main.js",
+    "producer": "tsx controller/poc/producer.ts",
+    "consumer": "tsx controller/poc/consumer.ts",
+    "start-mode": "concurrently \"npm run dev\" \"npm run consumer\"",
+    "serv": "pm2 start dist/main.js --name Vail_Production_Tracker",
+    "stop": "pm2 stop dist/main.js",
+    "log": "pm2 logs dist/main.js",
+    "kill": "pm2 kill",
+    "list": "pm2 list",
+    "temp": "pm2 delete Vail_Production_Tracker"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
+    "@types/ws": "^8.18.1",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.2"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "mysql2": "^3.20.0",
+    "pm2": "^7.0.1",
+    "ws": "^8.20.0"
+  }
+}
