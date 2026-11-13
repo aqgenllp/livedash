@@ -5,23 +5,29 @@ import { broadcastData } from '../socket/productionDataBroadcaster.js'
 
 const STREAMS = ["HOT_STREAM", "COLD_STREAM"];
 
-function formatMySQLDateTime(value: string) {
+function formatMySQLDateTime(value: string | Date | null): string | null {
   if (!value) return null;
-  const d = new Date(value);
-  return d.toISOString().slice(0, 19).replace("T", " ");
+
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
 
-async function upsertHotstream(data: any, machine_id: string) {
+async function upsertHotstream(data: any, machine_id: string,BatchNo: string) {
   const connection = await DB.getConnection();
   let MACHINE_ID = machine_id;
-  let FORMATION_ID = data.id;
+  // let FORMATION_ID = data.id;
 
   try {
     // ✅ Add required fields
     const payload: any = {
       ...data,
-      formation_id: FORMATION_ID,
+      batchNo: BatchNo,
+      // formation_id: FORMATION_ID,
       machine_id: MACHINE_ID
     };
 
@@ -175,6 +181,7 @@ async function startConsumer() {
         try {
           const raw = fields[1];
           const parsed = JSON.parse(raw);
+          const BatchNo = parsed.table; // Assuming the batch number is in the 'table' field
 
           let streamData: any;
           const operationType = parsed.type;
@@ -182,15 +189,15 @@ async function startConsumer() {
 
           // HOT STREAM
           if (streamName === "HOT_STREAM") {
-
             if (operationType === "INSERT") {
               streamData = parsed.data?.[0] || parsed.data;
-              await upsertHotstream(streamData, machine_id);
+              streamData["batchNo"] = BatchNo;
+              await upsertHotstream(streamData, machine_id, BatchNo);
               console.log(`Inserted [${streamName}]`, streamData.machine_id + streamData.formation_id);
             }
             else if (operationType === "UPDATE") {
               streamData = parsed.data[0]?.new || parsed.new;
-              await upsertHotstream(streamData, machine_id);
+              await upsertHotstream(streamData, machine_id, BatchNo);
                console.log(`Updated [${streamName}]`, streamData.machine_id + streamData.formation_id);
             }
             else if (operationType === "DELETE") {

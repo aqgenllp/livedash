@@ -56,7 +56,7 @@ const getMachineData = async (req: Request, res: Response): Promise<Response | a
 
     const query = `SELECT di.line,di.section,di.server_id,jm.batchNo,jm.status 
     FROM device_info di 
-    LEFT JOIN jobchange_mst jm ON jm.line_no = di.line
+    LEFT JOIN jobchange jm ON jm.line_no = di.line
     WHERE di.ip = '${machine_ip}' AND jm.status = 'RUNNING'`;
     try {
         const [rows] = await DB.query<MachineData[]>(query, [machine_ip]);
