@@ -60,7 +60,7 @@ export interface FormationItem {
   BLVDTReject: number;
   BCReject: number;
   cMachSpeed: number;
-  CommonReject: number;
+  CommonRejec: number;
   BundleWgt: number;
   cChuckIndex: number;
   cTubeCount: number;
