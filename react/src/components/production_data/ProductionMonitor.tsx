@@ -380,7 +380,7 @@ const ProductionMonitor = () => {
 
           cMachSpeed: Number(data.result.cMachSpeed ?? 0),
 
-          CommonReject: Number(data.result.CommonReject ?? 0),
+          CommonRejec: Number(data.result.CommonRejec ?? 0),
 
           BundleWgt: Number(data.result.BundleWgt ?? 0),
 

@@ -150,7 +150,7 @@ const Formation = () => {
           BLVDTReject: Number(incoming.BLVDTReject ?? 0),
           BCReject: Number(incoming.BCReject ?? 0),
           cMachSpeed: Number(incoming.cMachSpeed ?? 0),
-          CommonReject: Number(incoming.CommonReject ?? 0),
+          CommonRejec: Number(incoming.CommonRejec ?? 0),
           BundleWgt: Number(incoming.BundleWgt ?? 0),
           cChuckIndex: Number(incoming.cChuckIndex ?? 0),
           cTubeCount: Number(incoming.cTubeCount ?? 0),
@@ -587,7 +587,7 @@ const Formation = () => {
   const idReject = latestShiftWiseData.map((item) => item.idReject ?? 0);
   const lvdtReject = latestShiftWiseData.map((item) => (item.ALVDTReject ?? 0) + (item.BLVDTReject ?? 0));
   const bottomReject = latestShiftWiseData.map((item) => item.BCReject ?? 0);
-  const commonReject = latestShiftWiseData.map((item) => item.CommonReject ?? 0);
+  const commonRejec = latestShiftWiseData.map((item) => item.CommonRejec ?? 0);
 
   // REJECTION CHART OPTION
   const rejectionStack = {
@@ -666,7 +666,7 @@ const Formation = () => {
         name: 'Common Reject',
         type: 'line',
         smooth: true,
-        data: commonReject,
+        data: commonRejec,
       },
     ],
   };
