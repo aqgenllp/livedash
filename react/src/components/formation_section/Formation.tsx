@@ -14,8 +14,8 @@ const spin = keyframes`
   100% { transform: rotate(360deg); }
 `;
 
-const Formation = () => {
-  const WSS_URL = window.location.hostname === "localhost" ? import.meta.env.VITE_WSS_LOCAL : import.meta.env.VITE_WSS_PROD;
+const Formation = () => { 
+  const WSS_URL = window.location.hostname === "localhost" ? import.meta.env.VITE_WSS_URL : import.meta.env.VITE_WSS_PROD;
   const LOCAL_SERVICE_WS = import.meta.env.VITE_LOCAL_WS;
 
   const { executeApi } = useApi();
@@ -120,32 +120,6 @@ const Formation = () => {
   // websocket initialization and message handling
   useEffect(() => {
     const socket = new WebSocket(WSS_URL);
-
-    let pingInterval;
-
-    socket.onopen = () => {
-      console.log("✅ WebSocket Connected");
-      socket.send(
-        JSON.stringify({
-          type: "web_socket_register",
-          machine_id: machineId,
-          queryType: "production_data_update"
-        })
-      );
-
-      pingInterval = setInterval(() => {
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({
-              type: "ping",
-              timestamp: Date.now()
-            })
-          )
-        }
-
-      }, 30000);
-    };
-
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "production_data_update") {
@@ -208,7 +182,7 @@ const Formation = () => {
         });
       }
 
-      if (data.type === "pong") {
+      if (data.type === "PONG") {
         console.log("🏓 Pong received");
         return;
       }
@@ -311,56 +285,109 @@ const Formation = () => {
     });
   };
 
-  // Local Service WebSocket for Alarms and Status
+   // Local Service WebSocket for Alarms and Status
+  // useEffect(() => {
+  //   const localSocket = new WebSocket(LOCAL_SERVICE_WS);
+  //   localSocket.onopen = () => {
+  //     console.log("✅ Local Service WS Connected");
+  //   };
+
+  //   localSocket.onmessage = (event) => {
+  //     const data = JSON.parse(event.data);
+  //     console.log("📩 Local WS Message:", data);
+  //     if (data.type === "service_status") {
+  //       setPulseStatus("ACTIVE");
+  //       pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
+  //     }
+
+  //     if (data.type === "health_manager") {
+  //       console.log(data, "HEALTH MANAGER");
+  //     }
+
+  //     if (data.type === "health_snapshot") {
+  //       let healthSnapshot = data.snapshot.services;
+  //       if (healthSnapshot) {
+  //         updateHealthData(healthSnapshot);
+  //       }
+
+
+  //       console.log("📦 Health snapshot:", data.snapshot.services);
+  //       const clientMysql = data.snapshot.services.clientMysql;
+  //       console.log(clientMysql.status, clientMysql.text, clientMysql.type);
+
+  //     }
+
+  //     if (data.type === "service_status") {
+  //       console.log("⚡ Alert:", data.service, data.text, data.alertType);
+  //     }
+  //   };
+
+  //   localSocket.onerror = (err) => {
+  //     console.error("Local WS Error", err);
+  //   };
+
+  //   localSocket.onclose = () => {
+  //     console.log("Local WS Closed");
+  //   };
+
+  //   return () => {
+  //     localSocket.close();
+  //   };
+
+  // }, []);
+
   useEffect(() => {
-    const localSocket = new WebSocket(LOCAL_SERVICE_WS);
+  const localSocket = new WebSocket(LOCAL_SERVICE_WS);
+
+  
+    let pingInterval;
+
     localSocket.onopen = () => {
-      console.log("✅ Local Service WS Connected");
-    };
+      console.log("✅ WebSocket Connected");
+      localSocket.send(
+        JSON.stringify({
+          type: "WEBSOCKET_REGISTER",
+          machine_id: machineId,
+          queryType: "production_data_update"
+        })
+      );
 
-    localSocket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("📩 Local WS Message:", data);
-      if (data.type === "service_status") {
-        setPulseStatus("ACTIVE");
-        pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
-      }
-
-      if (data.type === "health_manager") {
-        console.log(data, "HEALTH MANAGER");
-      }
-
-      if (data.type === "health_snapshot") {
-        let healthSnapshot = data.snapshot.services;
-        if (healthSnapshot) {
-          updateHealthData(healthSnapshot);
+      pingInterval = setInterval(() => {
+        if (localSocket.readyState === WebSocket.OPEN) {
+          localSocket.send(
+            JSON.stringify({
+              type: "PING",
+              timestamp: Date.now()
+            })
+          )
         }
 
-
-        console.log("📦 Health snapshot:", data.snapshot.services);
-        const clientMysql = data.snapshot.services.clientMysql;
-        console.log(clientMysql.status, clientMysql.text, clientMysql.type);
-
-      }
-
-      if (data.type === "service_status") {
-        console.log("⚡ Alert:", data.service, data.text, data.alertType);
-      }
+      }, 30000);
     };
 
-    localSocket.onerror = (err) => {
-      console.error("Local WS Error", err);
-    };
+  localSocket.onmessage = (event) => {
+    let data: any;
+    try {
+      data = JSON.parse(event.data);
+    } catch (error) {
+      console.error("Invalid Local WS message", error);
+      return;
+    }
 
-    localSocket.onclose = () => {
-      console.log("Local WS Closed");
-    };
+    if (data.type === "service_status") {
+      setPulseStatus("ACTIVE");
+      pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
+    } else if (data.type === "health_snapshot") {
+      const services = data.snapshot?.services;
+      if (services) updateHealthData(services);
+    }
+  };
 
-    return () => {
-      localSocket.close();
-    };
+  localSocket.onerror = (error) => console.error("Local WS Error", error);
+  localSocket.onclose = () => console.log("Local WS Closed");
 
-  }, []);
+  return () => localSocket.close();
+}, []);
 
   //Get Data Bsed on Filters
   const getFormationDataWithFilters = async () => {

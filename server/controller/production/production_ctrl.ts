@@ -286,7 +286,7 @@ SELECT
     SELECT JSON_ARRAYAGG(t.line_no)
     FROM (
         SELECT DISTINCT line_no
-        FROM jobchange_mst
+        FROM jobchange
         WHERE status = 'RUNNING'
     ) t
 ) AS TotalLines,
@@ -306,7 +306,7 @@ SELECT
             'status', jm.status
         )
     )
-    FROM jobchange_mst jm
+    FROM jobchange jm
     WHERE jm.status = 'RUNNING'
 ) AS BatchData
 `;
