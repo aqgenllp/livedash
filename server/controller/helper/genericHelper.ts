@@ -58,14 +58,19 @@ const getMachineData = async (req: Request, res: Response): Promise<Response | a
     FROM device_info di 
     LEFT JOIN jobchange jm ON jm.line_no = di.line
     WHERE di.ip = '${machine_ip}' AND jm.status = 'RUNNING'`;
+
+    const batchListQuery =`SELECT Batchno From jobchange WHERE status = "RUNNING"`;
     try {
         const [rows] = await DB.query<MachineData[]>(query, [machine_ip]);
         const machine = rows[0];
 
         if (!machine) {
-            return res.status(400).json({
+        const [batchRows] = await DB.query<RowDataPacket[]>(batchListQuery);
+        const batchList = batchRows.map(row => row.Batchno);
+            return res.status(200).json({
                 text: `MACHINE NOT REGISTERED`,
-                type: "warning"
+                type: "warning",
+                data: batchList 
             });
         }
 

@@ -75,7 +75,7 @@ const formatNumber = (value?: number | null) => {
 
 const ProductionMonitor = () => {
   const navigate = useNavigate();
-  const WSS_URL = window.location.hostname === 'localhost' ? import.meta.env.VITE_WSS_LOCAL : import.meta.env.VITE_WSS_PROD;
+  const WSS_URL = window.location.hostname === "localhost" ? import.meta.env.VITE_WSS_URL : import.meta.env.VITE_WSS_PROD;
   const { executeApi } = useApi();
 
   const [loading, setLoading] = useState(false);

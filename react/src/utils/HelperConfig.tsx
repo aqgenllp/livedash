@@ -17,9 +17,17 @@ export const shiftIndex = (shift?: string) => {
   };
 
 
-export const getShiftDetails = (dateTime:any) => {
+export const getShiftDetails = (dateTime?: string | Date | null) => {
 
-  const date = new Date(dateTime);
+  const date = dateTime instanceof Date
+    ? new Date(dateTime.getTime())
+    : new Date(dateTime ?? '');
+  if (Number.isNaN(date.getTime())) {
+    return {
+      shiftName: 'Shift-C',
+      productionDate: '',
+    };
+  }
 
   const hours = date.getHours();
   const minutes = date.getMinutes();

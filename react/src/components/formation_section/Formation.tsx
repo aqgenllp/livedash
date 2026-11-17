@@ -14,7 +14,7 @@ const spin = keyframes`
   100% { transform: rotate(360deg); }
 `;
 
-const Formation = () => { 
+const Formation = () => {
   const WSS_URL = window.location.hostname === "localhost" ? import.meta.env.VITE_WSS_URL : import.meta.env.VITE_WSS_PROD;
   const LOCAL_SERVICE_WS = import.meta.env.VITE_LOCAL_WS;
 
@@ -38,6 +38,61 @@ const Formation = () => {
   const [healthData, setHealthData] = useState({});
 
   const activeFaultsRef = useRef(new Set<string>());
+
+    let getClientData = async () => {
+    try {
+      const response = await executeApi({ url: '/api/clientData', method: 'GET' });
+      if (response.text === "MACHINE DATA FOUND") {
+        setAlert({ open: true, text: response.text, type: 'success' });
+        const clientData = response.data;
+        // setSelectedMachineData(clientData);
+        return clientData;
+      } else if (response.text === "MACHINE NOT REGISTERED") {
+        
+        let batchList = response.data;
+        console.log(batchList)
+        // unRegisteredMachine(batchList)
+        
+
+        setAlert({ open: true, text: response.text, type: 'warning' });
+      }else {
+        // i have to handle for defalt machines which are not registered in device info table and also for machines which are registered but not found due to some reason
+        setAlert({ open: true, text: response.text, type: 'warning' });
+        return null;
+      }
+    } catch (error: any) {
+      setAlert({ open: true, text: `FAILED TO FETCH DATA : ${error.message}`, type: 'error' });
+      return null;
+    }
+  };
+
+
+   useEffect(() => {
+    const loadData = async () => {
+      const data = await getClientData();
+      if (data && typeof data === 'object') {
+        const tempId = `${data.line ?? ''}_${data.section ?? ''}`;
+        setMachineId(tempId);
+        if (data.batchNo && data.status === "RUNNING") {
+          setSelectedBatch(data.batchNo);
+        }
+        let currentDate = new Date();
+        let shiftData = await getShiftDetails(currentDate);
+        setSelectedShift(shiftData.shiftName);
+        await formationDataCurrentShift(tempId);
+      } else {
+        console.log("handle for unregistered machine");
+        setLoading(false);
+        setFormationData([]);
+      }
+    };
+    loadData();
+  }, []);
+
+
+//   const unRegisteredMachine = async (data): []=>{
+// setBatchOptions(data);
+//   }
 
   const formationDataCurrentShift = async (machine?: string) => {
     const currentMachineId = machine || machineId;
@@ -76,46 +131,9 @@ const Formation = () => {
     }
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      const data = await getClientData();
-      if (data && typeof data === 'object') {
-        const tempId = `${data.line ?? ''}_${data.section ?? ''}`;
-        setMachineId(tempId);
-        if (data.batchNo && data.status === "RUNNING") {
-          setSelectedBatch(data.batchNo);
-        }
-        let currentDate = new Date();
-        let shiftData = await getShiftDetails(currentDate);
-        setSelectedShift(shiftData.shiftName);
-        await formationDataCurrentShift(tempId);
-      } else {
-        console.log("handle for unregistered machine");
-        setLoading(false);
-        setFormationData([]);
-      }
-    };
-    loadData();
-  }, []);
+ 
 
-  let getClientData = async () => {
-    try {
-      const response = await executeApi({ url: '/api/clientData', method: 'GET' });
-      if (response.text === "MACHINE DATA FOUND") {
-        setAlert({ open: true, text: response.text, type: 'success' });
-        const clientData = response.data;
-        // setSelectedMachineData(clientData);
-        return clientData;
-      } else {
-        // i have to handle for defalt machines which are not registered in device info table and also for machines which are registered but not found due to some reason
-        setAlert({ open: true, text: response.text, type: 'warning' });
-        return null;
-      }
-    } catch (error: any) {
-      setAlert({ open: true, text: `FAILED TO FETCH DATA : ${error.message}`, type: 'error' });
-      return null;
-    }
-  };
+
 
   // websocket initialization and message handling
   useEffect(() => {
@@ -205,56 +223,6 @@ const Formation = () => {
 
   }, [WSS_URL, machineId]);
 
-  // const updateHealthData = (data: any) => {
-  //   setHealthData(data);
-
-  //   let services =  Object.entries(data).filter(([key, value]) => value.status === false);
-
-  //   services.forEach(([key, value]) => {
-  //     pushAlarm(`[${key}] ${value.text}`, value.type);
-  //   });
-  // }
-
-
-  //   const STATUS_COLORS: Record<string, string> = {
-  //   SUCCESS: '#2e7d32',
-  //   WARNING: '#ed6c02',
-  //   ERROR: '#d32f2f',
-  //   STOPPED: '#c62828',
-  //   ACTIVE: '#1976d2',
-  //   INACTIVE: '#757575',
-  // };
-
-  // const updateHealthData = (services: any) => {
-  //   setAlarmLogs([]);
-  //   setHealthData(services);
-
-  //   const failedServices = Object.entries(services).filter(([_, service]: any) => service.status === false);
-
-  //   if (failedServices.length === 0) {
-  //     setPulseStatus("ACTIVE");
-  //     pushAlarm(`✅ All services Online`, "success");
-  //     return; 
-  //   }
-
-
-  //   setPulseStatus("ERROR");
-
-  //   failedServices.forEach(([serviceName, service]: any) => {
-  //     if (!activeFaultsRef.current.has(serviceName)) {
-  //       setPulseStatus("WARNING");
-  //       pushAlarm(`[${serviceName}] ${service.text}`,service.type || "error");
-  //       activeFaultsRef.current.add(serviceName);
-  //     }
-  //   });
-
-  //   // remove recovered services from fault set
-  //   Object.entries(services).forEach(([serviceName, service]: any) => {
-  //     if (service.status) {
-  //       activeFaultsRef.current.delete(serviceName);
-  //     }
-  //   });
-  // };
 
   const updateHealthData = (services: any) => {
     setHealthData(services);
@@ -285,61 +253,8 @@ const Formation = () => {
     });
   };
 
-   // Local Service WebSocket for Alarms and Status
-  // useEffect(() => {
-  //   const localSocket = new WebSocket(LOCAL_SERVICE_WS);
-  //   localSocket.onopen = () => {
-  //     console.log("✅ Local Service WS Connected");
-  //   };
-
-  //   localSocket.onmessage = (event) => {
-  //     const data = JSON.parse(event.data);
-  //     console.log("📩 Local WS Message:", data);
-  //     if (data.type === "service_status") {
-  //       setPulseStatus("ACTIVE");
-  //       pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
-  //     }
-
-  //     if (data.type === "health_manager") {
-  //       console.log(data, "HEALTH MANAGER");
-  //     }
-
-  //     if (data.type === "health_snapshot") {
-  //       let healthSnapshot = data.snapshot.services;
-  //       if (healthSnapshot) {
-  //         updateHealthData(healthSnapshot);
-  //       }
-
-
-  //       console.log("📦 Health snapshot:", data.snapshot.services);
-  //       const clientMysql = data.snapshot.services.clientMysql;
-  //       console.log(clientMysql.status, clientMysql.text, clientMysql.type);
-
-  //     }
-
-  //     if (data.type === "service_status") {
-  //       console.log("⚡ Alert:", data.service, data.text, data.alertType);
-  //     }
-  //   };
-
-  //   localSocket.onerror = (err) => {
-  //     console.error("Local WS Error", err);
-  //   };
-
-  //   localSocket.onclose = () => {
-  //     console.log("Local WS Closed");
-  //   };
-
-  //   return () => {
-  //     localSocket.close();
-  //   };
-
-  // }, []);
-
   useEffect(() => {
-  const localSocket = new WebSocket(LOCAL_SERVICE_WS);
-
-  
+    const localSocket = new WebSocket(LOCAL_SERVICE_WS);
     let pingInterval;
 
     localSocket.onopen = () => {
@@ -365,29 +280,29 @@ const Formation = () => {
       }, 30000);
     };
 
-  localSocket.onmessage = (event) => {
-    let data: any;
-    try {
-      data = JSON.parse(event.data);
-    } catch (error) {
-      console.error("Invalid Local WS message", error);
-      return;
-    }
+    localSocket.onmessage = (event) => {
+      let data: any;
+      try {
+        data = JSON.parse(event.data);
+      } catch (error) {
+        console.error("Invalid Local WS message", error);
+        return;
+      }
 
-    if (data.type === "service_status") {
-      setPulseStatus("ACTIVE");
-      pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
-    } else if (data.type === "health_snapshot") {
-      const services = data.snapshot?.services;
-      if (services) updateHealthData(services);
-    }
-  };
+      if (data.type === "service_status") {
+        setPulseStatus("ACTIVE");
+        pushAlarm(`[${data.service}] ${data.text}`, data.alertType);
+      } else if (data.type === "health_snapshot") {
+        const services = data.snapshot?.services;
+        if (services) updateHealthData(services);
+      }
+    };
 
-  localSocket.onerror = (error) => console.error("Local WS Error", error);
-  localSocket.onclose = () => console.log("Local WS Closed");
+    localSocket.onerror = (error) => console.error("Local WS Error", error);
+    localSocket.onclose = () => console.log("Local WS Closed");
 
-  return () => localSocket.close();
-}, []);
+    return () => localSocket.close();
+  }, []);
 
   //Get Data Bsed on Filters
   const getFormationDataWithFilters = async () => {

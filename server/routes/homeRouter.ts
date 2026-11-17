@@ -16,7 +16,7 @@ import {
   getProductionOverviewByDate,
   getLineShiftDetailsByDate,
   getProductionOverallData,
-} from '../controller/production/production_ctrl.js'
+} from '../controller/production/production_ctrl.js' 
 
 homeRouter.post('/productionData',getProductionOverallData)
 homeRouter.get('/production/lines', getAvailableProductionLines);
