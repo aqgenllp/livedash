@@ -39,7 +39,7 @@ const Formation = () => {
 
   const activeFaultsRef = useRef(new Set<string>());
 
-    let getClientData = async () => {
+  let getClientData = async () => {
     try {
       const response = await executeApi({ url: '/api/clientData', method: 'GET' });
       if (response.text === "MACHINE DATA FOUND") {
@@ -48,14 +48,14 @@ const Formation = () => {
         // setSelectedMachineData(clientData);
         return clientData;
       } else if (response.text === "MACHINE NOT REGISTERED") {
-        
+
         let batchList = response.data;
         console.log(batchList)
         // unRegisteredMachine(batchList)
-        
+
 
         setAlert({ open: true, text: response.text, type: 'warning' });
-      }else {
+      } else {
         // i have to handle for defalt machines which are not registered in device info table and also for machines which are registered but not found due to some reason
         setAlert({ open: true, text: response.text, type: 'warning' });
         return null;
@@ -67,7 +67,7 @@ const Formation = () => {
   };
 
 
-   useEffect(() => {
+  useEffect(() => {
     const loadData = async () => {
       const data = await getClientData();
       if (data && typeof data === 'object') {
@@ -90,9 +90,9 @@ const Formation = () => {
   }, []);
 
 
-//   const unRegisteredMachine = async (data): []=>{
-// setBatchOptions(data);
-//   }
+  //   const unRegisteredMachine = async (data): []=>{
+  // setBatchOptions(data);
+  //   }
 
   const formationDataCurrentShift = async (machine?: string) => {
     const currentMachineId = machine || machineId;
@@ -131,7 +131,7 @@ const Formation = () => {
     }
   };
 
- 
+
 
 
 
@@ -174,33 +174,27 @@ const Formation = () => {
           cTubeCount: Number(incoming.cTubeCount ?? 0),
         };
 
-        // const incomingDetails = getShiftDetails(incoming.cDate);
-
-        // const index = prev.findIndex((item) => {
-
-        //   const itemDetails = getShiftDetails(item.cDate);
-
-        //   return (
-        //     item.machine_id === incoming.machine_id &&
-        //     item.batchNo === incoming.batchNo &&
-        //     itemDetails.productionDate === incomingDetails.productionDate &&
-        //     itemDetails.shiftName === incomingDetails.shiftName
-        //   );
-
-        // });
-
         setFormationData((prev) => {
-          const index = prev.findIndex((item) => item.formation_id === incoming.formation_id && item.machine_id === incoming.machine_id && item.batchNo === incoming.batchNo);
+          const index = prev.findIndex(
+            (item) =>
+              item.machine_id === incoming.machine_id &&
+              item.batchNo === incoming.batchNo &&
+              item.cDate === incoming.old_cDate
+          );
+
           if (index !== -1) {
             const updated = [...prev];
             updated[index] = incoming;
             return updated;
           }
+
           return [...prev, incoming];
         });
       }
 
-      if (data.type === "PONG") {
+
+
+      if (data.type === "pong") {
         console.log("🏓 Pong received");
         return;
       }

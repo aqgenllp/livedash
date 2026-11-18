@@ -5,16 +5,30 @@ import { broadcastData } from '../socket/productionDataBroadcaster.js'
 
 const STREAMS = ["HOT_STREAM", "COLD_STREAM"];
 
+
 function formatMySQLDateTime(value: string | Date | null): string | null {
   if (!value) return null;
 
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
+  if (typeof value === "string") {
+    // Preserve the original date/time instead of converting timezone.
+    const match = value.match(
+      /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})/
+    );
 
-  const pad = (n: number) => String(n).padStart(2, "0");
+    if (match) {
+      return `${match[1]} ${match[2]}`;
+    }
+  }
 
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  if (value instanceof Date) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+
+    return `${value.getUTCFullYear()}-${pad(value.getUTCMonth() + 1)}-${pad(value.getUTCDate())} ${pad(value.getUTCHours())}:${pad(value.getUTCMinutes())}:${pad(value.getUTCSeconds())}`;
+  }
+
+  return null;
 }
+
 
 
 async function upsertHotstream(data: any, machine_id: string,BatchNo: string) {
@@ -52,6 +66,9 @@ async function upsertHotstream(data: any, machine_id: string,BatchNo: string) {
     await connection.query(query, values);
     await connection.commit();
 
+    // Update the WebSocket clients with the new data
+    await broadcastData(machine_id, "production_data_update", payload);
+
     console.log("✅ UPSERT HOT:", `modified : ${payload.machine_id + payload.formation_id}`);
 
   } catch (err) {
@@ -61,15 +78,57 @@ async function upsertHotstream(data: any, machine_id: string,BatchNo: string) {
   }
 }
 
-// Delete Hotstream
-async function deleteHotstream(data: any, machine_id: string) {
+async function updateHotstream(data: any, machine_id: string, BatchNo: string, matchCDate: string | Date) {
   const connection = await DB.getConnection();
 
   try {
+    const payload: any = {
+      ...data,
+      batchNo: BatchNo,
+      machine_id
+    };
+
+    payload.cDate = formatMySQLDateTime(payload.cDate);
+    const formattedMatchCDate = formatMySQLDateTime(matchCDate);
+
+    if (!payload.cDate || !formattedMatchCDate) {
+      throw new Error("HOT_STREAM update requires a valid cDate");
+    }
+
+    delete payload.id;
+
+    const columns = Object.keys(payload).filter(col => col !== "machine_id" && col !== "batchNo");
+    if (columns.length === 0) {
+      throw new Error("HOT_STREAM update has no fields to update");
+    }
+
+    const setClause = columns.map(col => `${col} = ?`).join(", ");
+    const values = columns.map(col => payload[col]);
+    const query = `UPDATE formationsection_mst SET ${setClause}
+      WHERE cDate = ? AND machine_id = ? AND batchNo = ?`;
+
+    await connection.query(query, [...values, formattedMatchCDate, machine_id, BatchNo]);
+    await connection.commit();
+    await broadcastData(machine_id, "production_data_update", payload);
+  } catch (err) {
+    console.error("❌ UPDATE HOT ERROR:", err);
+    throw err;
+  } finally {
+    connection.release();
+  }
+}
+
+// Delete Hotstream
+async function deleteHotstream(data: any, machine_id: string, BatchNo: string, cDate: string | Date) {
+  const connection = await DB.getConnection();
+
+  try {
+    const formattedCDate = formatMySQLDateTime(cDate);
+
     await connection.query(
       `DELETE FROM formationsection_mst 
-       WHERE formation_id = ? AND machine_id = ?`,
-      [data.id, machine_id]
+       WHERE formation_id = ? AND machine_id = ? AND batchNo = ? AND cDate = ?`,
+      [data.id, machine_id, BatchNo, formattedCDate]
     );
 
     await connection.commit();
@@ -196,17 +255,18 @@ async function startConsumer() {
               console.log(`Inserted [${streamName}]`, streamData.machine_id + streamData.formation_id);
             }
             else if (operationType === "UPDATE") {
-              streamData = parsed.data[0]?.new || parsed.new;
-              await upsertHotstream(streamData, machine_id, BatchNo);
+              const change = parsed.data?.[0] || parsed;
+              streamData = change.new || parsed.new;
+              const previousData = change.old || parsed.old || streamData;
+              await updateHotstream(streamData, machine_id, BatchNo, previousData.cDate);
                console.log(`Updated [${streamName}]`, streamData.machine_id + streamData.formation_id);
             }
             else if (operationType === "DELETE") {
               streamData = parsed.data?.old || parsed.old;
-              await deleteHotstream(streamData, machine_id);
+              await deleteHotstream(streamData, machine_id,BatchNo, parsed.cDate);
               console.log(`DELETED [${streamName}]`, streamData.machine_id + streamData.formation_id);
+              await broadcastData(machine_id, "production_data_update", streamData);
             }
-
-            await broadcastData( machine_id,"production_data_update",streamData);
           }
 
           // COLD STREAM

@@ -9,22 +9,23 @@ import {
   Divider
 } from '@mui/material';
 import { Link } from 'react-router-dom';
-import menu from '../../utils/sidebarConfig'
+import menu, { type MachineSection } from '../../utils/sidebarConfig'
 // import { useAuth } from '../../context/Authcontext';
 // import {useApi} from '../../utils/GlobalApiWrapper';
 
 interface SideBarProps {
   open: boolean;
   onClose: () => void;
+  machineSection: MachineSection;
 }
 
-export default function SideBar({ open, onClose }: SideBarProps) {
+export default function SideBar({ open, onClose, machineSection }: SideBarProps) {
   // const {executeApi} = useApi()
   // const { section,setSection,setProfile} = useAuth();
   // later this will come from auth context
 //  const userPermissions = section ? section.split('|') : [];
 
-  const filteredMenu = menu.filter(section => section.permission === 'FORMATION'); // Filter based on permissions (for now hardcoded) 
+  const filteredMenu = menu.filter(section => section.permission === machineSection);
 
 
   // useEffect(()=>{
